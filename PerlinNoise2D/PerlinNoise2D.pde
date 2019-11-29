@@ -1,11 +1,10 @@
-final float frequency = 4.0;
-//final float amplitude = 2.0;
-final float amplitude = 640.0;
-final float lacunarity  = 2.0; // For inscreases in frequency with octaves
-final float persistence = 0.5; // For inscreases in amplitude with octaves
-
 final boolean useOctaves = true;
-final boolean island = true;
+final int chunkType = 0; // 0 for Mountains, 1 for Islands, 2 for grasslands, 3 for deserts
+
+float frequency; // Detail level of noise
+float amplitude; // Range of noise
+float lacunarity; // For inscreases in frequency with octaves
+float persistence; // For inscreases in amplitude with octaves
 
 float waterHeight;
 float sandHeight;
@@ -25,8 +24,35 @@ void setup() {
   //smooth(1);
   noLoop();
   
+  // Determine enviroment type's variable settings
+  switch(chunkType) {
+    case 1: // Island
+      frequency = 4.0;
+      amplitude = 320.0 + (float)Math.random()*320.0;
+      lacunarity = 2.0;
+      persistence = 0.5; 
+      break;
+    case 2: // Grassland
+      frequency = 2.25;
+      amplitude = height/10.0;
+      lacunarity = 1.2;
+      persistence = 1.5; 
+      break;
+    case 3: // Desert
+      frequency = 3.0;
+      amplitude = height/25.0;
+      lacunarity = 1.0;
+      persistence = 0.8; 
+      break;
+    default: // Mountain
+      frequency = 4.0;
+      amplitude = 640.0;
+      lacunarity = 2.0;
+      persistence = 0.5;  
+  }
+  
   // Define the height map
-  heightMap = new float[width];
+  heightMap = new float[width+1];
   heightMapXScale = 1/((width-1)/2.0);
   heightMapXTranslation = -1.0;
   heightMapYScale = 2;
@@ -34,8 +60,8 @@ void setup() {
   generateHeightMap();
   
   waterHeight = height - height/10;
-  sandHeight = waterHeight - height/30;
-  grassHeight = sandHeight - height/20;
+  sandHeight = waterHeight - height/25;
+  grassHeight = sandHeight - height/10;
   gravelHeight = grassHeight - height/3; 
 }
 
@@ -45,60 +71,64 @@ void draw() {
   //strokeWeight(2);
   //generateHeightMap();
   
-  drawIsland();
+  drawWater();
+  drawLand();
   drawSun();
   drawHeightMapOutline();
-  drawWater();
 }
 
 // HEIGHT MAP FUNCTIONS
 
 // Generate the height map 
 void generateHeightMap() {
-  float max = -3;
-  float min = 3;
-  //heightMap[0] = test(0.0, 8);
+  float baseHeight;
+  switch(chunkType) {
+    case 1: // Island
+      baseHeight = height/20.0;
+      break;
+    case 2: // Grassland
+      baseHeight = height/8.25;
+      break;
+    case 3: // Desert
+      baseHeight = height/10.0;
+      break;
+    default: // Mountain
+      baseHeight = 0.0;
+  }
+  
   if (useOctaves) {
     for (int i=0; i<heightMap.length; i++) {
-      heightMap[i] = generateOctaveNoise((float)i/width, 8);
-      if (heightMap[i]>max) {
-        max = heightMap[i];
-      }
-      if (heightMap[i]<min) {
-        min = heightMap[i];
-      }
+      heightMap[i] = baseHeight + generateOctaveNoise((float)i/width, 8);
+      System.out.println(heightMap[i]);
     }
   } else {
     for (int i=0; i<heightMap.length; i++) {
-      heightMap[i] = generateNoise((float)i/width);
-      if (heightMap[i]>max) {
-        max = heightMap[i];
-      }
-      if (heightMap[i]<min) {
-        min = heightMap[i];
-      }
+      heightMap[i] = baseHeight + generateNoise((float)i/width);
     }
   }
-  System.out.println("Max found was " + max);
-  System.out.println("Min found was " + min);
   
-  if (island) {
+  if (chunkType==1) {
     makeIsland();
   }
 }
 
 // Makes things on the left 25% and right 25% have less amplitude
+// Need to modify to instead reduce amplitude during these sides.
 void makeIsland() {
   float maxRemoval = amplitude * 0.7;
-  int firstQuarterIndex =(int)(heightMap.length/4);
-  int thirdQuarterIndex = (int)(heightMap.length*0.75);
+  float removalLeftInner = 0.2 + (float)Math.random()*0.15;
+  float removalRightInner = 0.2 + (float)Math.random()*0.15;
+  System.out.println("Left inner: " + removalLeftInner);
+  System.out.println("Right inner: " + removalRightInner);
+  int firstQuarterIndex =(int)(heightMap.length*removalLeftInner);
+  int thirdQuarterIndex = (int)(heightMap.length*(1.0-removalRightInner));
   
   for (int i=0; i<firstQuarterIndex; i++) {
-    heightMap[i] = Math.max(0, heightMap[i]*(Math.abs(i-0))/firstQuarterIndex);
+    heightMap[i] = Math.max(25.0 + (float)Math.random()*5.0, heightMap[i]*(Math.abs(i-0))/firstQuarterIndex);
   }
   
   for (int i=heightMap.length-1; i>thirdQuarterIndex; i--) {
-    heightMap[i] = Math.max(0, heightMap[i]*(Math.abs(i-heightMap.length-1))/firstQuarterIndex);
+    heightMap[i] = Math.max(25.0 + (float)Math.random()*5.0, heightMap[i]*(Math.abs(i-heightMap.length-1))/firstQuarterIndex);
   }
   System.out.println(maxRemoval);
 }
@@ -106,12 +136,16 @@ void makeIsland() {
 // NOISE FUNCTIONS
 
 float generateOctaveNoise(float x, int octaves) {
+  return generateOctaveNoise(x,octaves, frequency, amplitude);
+}
+
+float generateOctaveNoise(float x, int octaves, float frequency, float amplitude) {
   float localFrequency = frequency;
   float localAmplitude = 1;
   float noiseValue = 0;
   float amplitudeSum = 0;
    for (int i=0; i<octaves; i++) {
-      noiseValue += noise(x * localFrequency) * localAmplitude;
+      noiseValue += noise(x * localFrequency + 1.0) * localAmplitude;
       amplitudeSum += localAmplitude;
       localFrequency *= lacunarity;
       localAmplitude *= persistence;
@@ -123,7 +157,6 @@ float generateOctaveNoise(float x, int octaves) {
 float generateNoise(float x) {
   return noise(x * frequency) * amplitude;
 }
-
 
 // DRAWING FUNCTIONS
 
@@ -139,9 +172,9 @@ void drawHeightMapOutline() {
 System.out.println("Max X drawn was " + (height-heightMap[240]));
 }
 
-void drawIsland() {
+void drawLand() {
   
-  for (int i=0; i<heightMap.length-1; i++) {
+  for (int i=0; i<heightMap.length; i++) {
     //line((float)i * heightMapXScale + heightMapXTranslation,-1,
     //(float)i * heightMapXScale + heightMapXTranslation,heightMap[i+1] + heightMapYTranslation);  
     
@@ -152,9 +185,10 @@ void drawIsland() {
     if (height-heightMap[i]<sandHeight) {
       line(i,height,i,sandHeight);
     } else if (height-heightMap[i]<=waterHeight) {
-      line(i,waterHeight,i,height-heightMap[i]);  
+      line(i,height,i,height-heightMap[i]);  
       done = true;
     } else {
+      line(i,height,i,height-heightMap[i]); 
       done = true;
     }
     
