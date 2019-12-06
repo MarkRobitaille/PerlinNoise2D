@@ -1,10 +1,13 @@
 // -------------------------
 // Perlin Noise 2D
-// Mark Robitaille
+// Mark Robitaille, 2019
+// 
+// This program shows off a 2D application of 1D Perlin noise.
+// By changing the enviromentType variable below, you can change the produced scene.
 // -------------------------
 
 // Program settings
-final int chunkType = 0; // 0 for Mountains, 1 for Islands, 2 for grasslands, 3 for deserts
+final int enviromentType = 0; // 0 for Mountains, 1 for Islands, 2 for grasslands, 3 for deserts
 final boolean overlappingWater = true;
 final boolean useOctaves = true; // Use multiple octaves or not
 
@@ -44,7 +47,7 @@ void setup() {
   gravelHeight = grassHeight - height/3; 
   
   // Determine enviroment type's variable settings
-  switch(chunkType) {
+  switch(enviromentType) {
     case 1: // Island
       frequency = 4.0;
       amplitude = 320.0 + (float)Math.random()*320.0;
@@ -102,7 +105,7 @@ void draw() {
 // HEIGHT MAP FUNCTIONS
 
 // generateHeightMap
-// Calculate height map for chunk's environment using either octaves or not.
+// Calculate height map for environment using either octaves or not.
 void generateHeightMap() {
   if (useOctaves) {
     for (int i=0; i<heightMap.length; i++) {
@@ -114,7 +117,7 @@ void generateHeightMap() {
     }
   }
   
-  if (chunkType==1) { // Island
+  if (enviromentType==1) { // Island
     makeIsland();
   }
 }
@@ -122,9 +125,9 @@ void generateHeightMap() {
 // makeIsland
 // Makes things on the left and right have less amplitude.
 void makeIsland() {
-  // Reduce amplitude between 20-35% of the way into the left or right
-  float removalLeftInner = 0.2 + (float)Math.random()*0.15;
-  float removalRightInner = 0.2 + (float)Math.random()*0.15;
+  // Reduce amplitude between 15-35% of the way into the left or right
+  float removalLeftInner = 0.15 + (float)Math.random()*0.2;
+  float removalRightInner = 0.15 + (float)Math.random()*0.2;
   // Detemine index thatand left indexes
   int removalLeftInnerIndex =(int)(heightMap.length*removalLeftInner);
   int removalRightInnerIndex = (int)(heightMap.length*(1.0-removalRightInner));
