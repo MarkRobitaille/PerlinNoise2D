@@ -3,11 +3,12 @@
 // Mark Robitaille
 // -------------------------
 
-// CHANGE TO ALTER APPEARANCE
-final int chunkType = 1; // 0 for Mountains, 1 for Islands, 2 for grasslands, 3 for deserts
-final boolean overlappingWater = false;
+// Program settings
+final int chunkType = 0; // 0 for Mountains, 1 for Islands, 2 for grasslands, 3 for deserts
+final boolean overlappingWater = true;
 final boolean useOctaves = true; // Use multiple octaves or not
 
+// Perlin noise variables
 float frequency; // Detail level of noise
 float amplitude; // Range of noise
 float lacunarity; // For inscreases in frequency with octaves
@@ -20,12 +21,15 @@ float sandHeight;
 float grassHeight;
 float gravelHeight; 
 
+// Height map variables
 float[] heightMap;
 float heightMapXScale; // Used to scale heightMap's index values into the window's 2.0 width
 float heightMapXTranslation; // Used to center heightmap into 
 float heightMapYScale;
 float heightMapYTranslation; // Used to center within 2.0 height;
 
+// setup
+// Runs initially when opening program.
 void setup() {
   // General Processing setup
   size(640,640, P3D);
@@ -80,9 +84,12 @@ void setup() {
   
 }
 
+// draw
+// Runs every time frame is drawn.
 void draw() {
   background(135,205,235);
   color(0,0,0);
+  // Draw the scene
   drawWater();
   drawLand();
   drawSun();
@@ -94,7 +101,8 @@ void draw() {
 
 // HEIGHT MAP FUNCTIONS
 
-// Generate the height map 
+// generateHeightMap
+// Calculate height map for chunk's environment using either octaves or not.
 void generateHeightMap() {
   if (useOctaves) {
     for (int i=0; i<heightMap.length; i++) {
@@ -106,12 +114,13 @@ void generateHeightMap() {
     }
   }
   
-  if (chunkType==1) {
+  if (chunkType==1) { // Island
     makeIsland();
   }
 }
 
-// Makes things on the left and right have less amplitude
+// makeIsland
+// Makes things on the left and right have less amplitude.
 void makeIsland() {
   // Reduce amplitude between 20-35% of the way into the left or right
   float removalLeftInner = 0.2 + (float)Math.random()*0.15;
@@ -133,27 +142,35 @@ void makeIsland() {
 
 // NOISE FUNCTIONS
 
+// generateOctaveNoise
+// Calculate the noise value for a given x coordinate and the provided number of octaves. 
 float generateOctaveNoise(float x, int octaves) {
   float localFrequency = frequency;
   float localAmplitude = 1;
   float noiseValue = 0;
   float amplitudeSum = 0;
    for (int i=0; i<octaves; i++) {
+     // Find noise value by scaling x by the local frequency and multiply result by the local amplitude
+     // Add each octave!
       noiseValue += noise(x * localFrequency + 1.0) * localAmplitude;
-      amplitudeSum += localAmplitude;
-      localFrequency *= lacunarity;
-      localAmplitude *= persistence;
+      amplitudeSum += localAmplitude; // Keep track of total possible amplitude possible to scale
+      localFrequency *= lacunarity; // Increase/decrease the frequency by the lacunarity for future octave(s)
+      localAmplitude *= persistence; // Increase/decrease the frequency by the persistence for future octave(s)
    }
    return noiseValue/amplitudeSum * amplitude; // To scale to our intended amplitude
 } 
 
-
+// generateNoise
+// Generates noise value for given x coordinate without using octaves.
 float generateNoise(float x) {
+  // Find noise value by scaling x and z by the frequency and multiply by the amplitude
   return noise(x * frequency) * amplitude;
 }
 
 // DRAWING FUNCTIONS
 
+// drawHeightMapOutline
+// Draws lines to depict the height map.
 void drawHeightMapOutline() {
   stroke(0,0,0);
   for (int i=0; i<heightMap.length-1; i++) {
@@ -161,6 +178,9 @@ void drawHeightMapOutline() {
   }
 }
 
+// drawLand
+// Draws all of the land terrain by drawing lines from bottom of window to height map.
+// Use separate lines to color for each terrain type.
 void drawLand() {
   for (int i=0; i<heightMap.length; i++) {
     boolean done = false;
@@ -174,6 +194,7 @@ void drawLand() {
       done = true;
     }
     
+    // Use random value to make division of terrain types look more natural
     float padding = (float)Math.random()*3.0;
     
     // Draw grass
@@ -207,6 +228,8 @@ void drawLand() {
   }
 }
 
+// drawWater
+// Draw the water as a rectangle to the defined water height.
 void drawWater() {
   line(0,waterHeight, width, waterHeight);
   fill(0,120,190);
@@ -214,6 +237,8 @@ void drawWater() {
   rect(0,waterHeight, width, height-waterHeight);
 }
 
+// drawSun
+// draws a Sun in the top left portion of the window.
 void drawSun() {
   stroke(0,0,0);
   fill(250,185,20);
